@@ -1,0 +1,49 @@
+---
+name: "Shopping Application Build"
+
+on:
+
+  push:
+    branches:
+      - production 
+      - testing
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      packer_version: "1.9.4"
+
+    steps:
+
+      - name: "Repository Checkout"
+        uses: actions/checkout@v3
+
+      - name: "Packer Installation"
+        uses: hashicorp/setup-packer@main
+        with:
+          version: ${{ env.packer_version }}
+
+      - name: "Execute packer initilization"
+        run: packer init .
+        working-directory: ./packer/
+
+      - name: "Packer Validation"
+        run: packer validate -var-file="prod.pkrvars.hcl" .
+        working-directory: ./packer/
+
+      - name: "Packer Build"
+        run: packer build -var-file="prod.pkrvars.hcl" .
+        working-directory: ./packer/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.PROD_AWS_DEFAULT_REGION }}
+       
+      - name: "Notify Prod Deployment Job"
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT }}
+          repository: rmpawstudy/shopping-app-infra
+          event-type: prod-deploy-event
