@@ -2,7 +2,7 @@
 name: "Shopping Application Development"
 
 on:
-`
+
   push:
     branches:
       - development 
